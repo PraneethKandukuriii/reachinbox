@@ -74,3 +74,47 @@ export async function createEmails(input: CreateEmailsInput) {
 
   return createdEmails;
 }
+
+export async function getScheduledEmails(userId: string) {
+  return prisma.email.findMany({
+    where: {
+      status: "SCHEDULED",
+      campaign: {
+        userId,
+      },
+    },
+    include: {
+      sender: {
+        select: {
+          email: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      scheduledAt: "asc",
+    },
+  });
+}
+
+export async function getSentEmails(userId: string) {
+  return prisma.email.findMany({
+    where: {
+      status: "SENT",
+      campaign: {
+        userId,
+      },
+    },
+    include: {
+      sender: {
+        select: {
+          email: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      sentAt: "desc",
+    },
+  });
+}

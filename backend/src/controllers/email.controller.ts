@@ -1,5 +1,11 @@
 import { Request, Response } from "express";
-import { createEmails } from "../services/email.service.js";
+
+import {
+  createEmails,
+  getScheduledEmails,
+  getSentEmails,
+} from "../services/email.service.js";
+
 import { AppError } from "../errors/app-error.js";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -60,6 +66,56 @@ export async function createEmailsController(
 
     return res.status(500).json({
       message: "Failed to create emails",
+    });
+  }
+}
+
+export async function getScheduledEmailsController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { userId } = req.query;
+
+    if (typeof userId !== "string" || !userId.trim()) {
+      return res.status(400).json({
+        message: "userId is required.",
+      });
+    }
+
+    const emails = await getScheduledEmails(userId.trim());
+
+    return res.status(200).json(emails);
+  } catch (error) {
+    console.error("Failed to fetch scheduled emails:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch scheduled emails",
+    });
+  }
+}
+
+export async function getSentEmailsController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const { userId } = req.query;
+
+    if (typeof userId !== "string" || !userId.trim()) {
+      return res.status(400).json({
+        message: "userId is required.",
+      });
+    }
+
+    const emails = await getSentEmails(userId.trim());
+
+    return res.status(200).json(emails);
+  } catch (error) {
+    console.error("Failed to fetch sent emails:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch sent emails",
     });
   }
 }
