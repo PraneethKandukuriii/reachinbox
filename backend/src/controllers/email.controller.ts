@@ -1,32 +1,65 @@
-import {Request, Response} from "express";
+import { Request, Response } from "express";
 import { createEmails } from "../services/email.service.js";
+import { AppError } from "../errors/app-error.js";
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function createEmailsController(
-    req: Request,
-    res: Response
+  req: Request,
+  res: Response,
 ) {
-    try{
-        const { campaignId } = req.params;
-        if (typeof campaignId !== "string") {
-  return res.status(400).json({
-    message: "Invalid campaign ID",
-  });
-}
-        const { senderId, recipients } = req.body;
+  try {
+    const { campaignId } = req.params;
+    const { senderId, recipients } = req.body;
 
-        const result = await createEmails({ campaignId, senderId, recipients });
-        
-        res.status(201).json(result);
-    } catch (error) {
-        console.error("Failed to create emails:", error);   
-
-        res.status(500).json({
-            message: "Failed to create emails",
-        });
-
+    if (typeof campaignId !== "string" || !campaignId.trim()) {
+      return res.status(400).json({
+        message: "Invalid campaign ID.",
+      });
     }
+
+    if (typeof senderId !== "string" || !senderId.trim()) {
+      return res.status(400).json({
+        message: "senderId is required.",
+      });
+    }
+
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({
+        message: "At least one recipient is required.",
+      });
+    }
+
+    if (
+      recipients.some(
+        (recipient) =>
+          typeof recipient !== "string" ||
+          !emailPattern.test(recipient.trim()),
+      )
+    ) {
+      return res.status(400).json({
+        message: "All recipients must be valid email addresses.",
+      });
+    }
+
+    const result = await createEmails({
+      campaignId: campaignId.trim(),
+      senderId: senderId.trim(),
+      recipients: recipients.map((recipient) => recipient.trim()),
+    });
+
+    return res.status(201).json(result);
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        message: error.message,
+      });
+    }
+
+    console.error("Failed to create emails:", error);
+
+    return res.status(500).json({
+      message: "Failed to create emails",
+    });
+  }
 }
-
-
-
-

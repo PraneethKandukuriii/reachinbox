@@ -2,6 +2,7 @@ import prisma from "../config/database.js";
 import { env } from "../config/env.js";
 import { scheduleEmailJob } from "../queues/email.queue.js";
 import { reserveSendSlot } from "./email-throttle.service.js";
+import { AppError } from "../errors/app-error.js";
 
 interface CreateEmailsInput {
   campaignId: string;
@@ -17,7 +18,17 @@ export async function createEmails(input: CreateEmailsInput) {
   });
 
   if (!campaign) {
-    throw new Error("Campaign not found");
+    throw new AppError("Campaign not found", 404);
+  }
+
+  const sender = await prisma.sender.findUnique({
+    where: {
+      id: input.senderId,
+    },
+  });
+
+  if (!sender) {
+    throw new AppError("Sender not found", 404);
   }
 
   const scheduledTimes: Date[] = [];
