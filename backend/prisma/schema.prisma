@@ -6,3 +6,70 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model User {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  name      String
+  email     String   @unique
+  avatar    String?
+  createdAt DateTime @default(now())
+
+  senders   Sender[]
+  campaigns Campaign[]
+}
+
+model Sender {
+  id               String   @id @default(cuid())
+  userId           String
+  email            String
+  name             String
+  etherealUser     String
+  etherealPassword String
+  createdAt        DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id])
+  emails Email[]
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  userId      String
+  subject     String
+  body        String
+  startTime   DateTime
+  delayMs     Int
+  hourlyLimit Int
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  emails Email[]
+}
+
+model Email {
+  id          String      @id @default(cuid())
+  campaignId  String
+  senderId    String
+  recipient   String
+  subject     String
+  body        String
+  scheduledAt DateTime
+  sentAt      DateTime?
+  status      EmailStatus @default(SCHEDULED)
+  attempts    Int         @default(0)
+  messageId   String?
+  error       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+  sender   Sender   @relation(fields: [senderId], references: [id])
+}
+
+enum EmailStatus {
+  SCHEDULED
+  PROCESSING
+  SENT
+  FAILED
+}
